@@ -1,0 +1,23 @@
+{
+  "productName": "YouTube Music Desktop App",
+  "version": "2.0.10",
+  "identifier": "com.ytmdesktop.app",
+  "build": {
+    "beforeDevCommand": "yarn vite --config viteconfig/renderer.ts",
+    "beforeBuildCommand": "yarn vite build --config viteconfig/renderer.ts",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../.vite/renderer"
+  },
+  "app": {
+    "security": {
+      "capabilities": ["default"]
+    },
+    "withGlobalTauri": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "icon": ["../src/assets/icons/ytmd.ico", "../src/assets/icons/ytmd.png"]
+  },
+  "plugins": {}
+}

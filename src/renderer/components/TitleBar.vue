@@ -121,8 +121,8 @@ if (props.isMainWindow) {
 
 <style scoped>
 .titlebar {
-  left: env(titlebar-area-x, 0);
-  width: env(titlebar-area-width, 100%);
+  left: 0;
+  width: 100%;
   height: 36px;
   user-select: none;
   -webkit-app-region: drag;
