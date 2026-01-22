@@ -20,7 +20,9 @@ fn ytmview_navigate_default(app: tauri::AppHandle) {
 
 #[tauri::command]
 fn set_progress_bar(window: tauri::Window, progress: f64) {
-    let progress_value = (progress.max(0.0).min(100.0) / 100.0) as u64;
+    // progress is 0-100 percentage, convert to u64 for taskbar
+    let progress_value = progress.max(0.0).min(100.0).round() as u64;
+    println!("[progress-bar] set progress: {}%", progress_value);
     let _ = window.set_progress_bar(tauri::window::ProgressBarState {
         progress: Some(progress_value),
         status: None,

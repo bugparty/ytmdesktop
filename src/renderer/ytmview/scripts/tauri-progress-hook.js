@@ -1,38 +1,50 @@
 (function () {
-  const invoke = window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke;
-  if (!invoke) {
-    console.warn("[ytm-progress-hook] tauri invoke not available");
+  // Only run on main YouTube Music page
+  if (window.location.hostname !== "music.youtube.com") {
     return;
   }
 
-  const safeInvoke = (cmd, args) => invoke(cmd, args).catch(err => console.warn("[ytm-progress-hook] invoke failed", err));
+  console.log("[ytm-progress-hook] script started");
 
-  const selectors = [
-    "ytmusic-player-bar",
-    "ytmusic-app-layout ytmusic-player-bar",
-    "ytmusic-app ytmusic-player-bar",
-    "ytmusic-app-layout>ytmusic-player-bar"
-  ];
+  const invoke = window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke;
+  if (!invoke) {
+    console.warn("[ytm-progress-hook] tauri invoke not available, window.__TAURI__ =", window.__TAURI__);
+    return;
+  }
+
+  console.log("[ytm-progress-hook] tauri invoke available");
+
+  const safeInvoke = (cmd, args) => {
+    return invoke(cmd, args).catch(err => console.warn("[ytm-progress-hook] invoke failed", err));
+  };
 
   let hooked = false;
 
-  function findPlayerApi() {
-    for (const sel of selectors) {
-      const el = document.querySelector(sel);
-      if (el?.playerApi) return el.playerApi;
-    }
-    return null;
+  function findPlayerBar() {
+    // YTM uses standard DOM, not shadow DOM for player bar
+    return document.querySelector("ytmusic-app-layout > ytmusic-player-bar") ||
+           document.querySelector("ytmusic-player-bar");
   }
 
   function trySetup() {
     if (hooked) return true;
-    const api = findPlayerApi();
-    if (!api) {
-      console.debug("[ytm-progress-hook] playerApi not ready");
+
+    const playerBar = findPlayerBar();
+    if (!playerBar) {
       return false;
     }
 
-    console.debug("[ytm-progress-hook] hooked playerApi events");
+    const api = playerBar.playerApi;
+    if (!api) {
+      return false;
+    }
+
+    // Check if playerApi is ready (has isReady method and returns true)
+    if (typeof api.isReady === "function" && !api.isReady()) {
+      return false;
+    }
+
+    console.log("[ytm-progress-hook] hooked playerApi events successfully!");
     hooked = true;
 
     const sendProgress = seconds => {
@@ -58,25 +70,25 @@
     return true;
   }
 
-  // Interval retry as before
-  let tries = 0;
-  const timer = setInterval(() => {
-    tries += 1;
-    const ok = trySetup();
-    if (ok) {
-      console.debug("[ytm-progress-hook] setup success at attempt", tries);
-      clearInterval(timer);
-    } else if (tries > 200) {
-      console.warn("[ytm-progress-hook] setup timed out after", tries, "tries");
-      clearInterval(timer);
-    }
-  }, 500);
+  // Wait for window load first, then start polling
+  function startPolling() {
+    console.log("[ytm-progress-hook] starting polling for playerApi");
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      if (trySetup()) {
+        console.log("[ytm-progress-hook] setup success at attempt", tries);
+        clearInterval(timer);
+      } else if (tries > 300) {
+        console.warn("[ytm-progress-hook] setup timed out after", tries, "tries (150 seconds)");
+        clearInterval(timer);
+      }
+    }, 500);
+  }
 
-  // Mutation observer to catch late-loaded player bar
-  const observer = new MutationObserver(() => {
-    if (trySetup()) {
-      observer.disconnect();
-    }
-  });
-  observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+  if (document.readyState === "complete") {
+    startPolling();
+  } else {
+    window.addEventListener("load", startPolling);
+  }
 })();
