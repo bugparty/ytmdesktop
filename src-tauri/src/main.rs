@@ -38,8 +38,8 @@ fn main() {
             let width = physical_size.width as f64 / scale_factor;
             let height = physical_size.height as f64 / scale_factor;
             
-            // Title bar height tuned for Windows DPI (avoid overlap with YTM view).
-            let title_height = 48.0;
+            // Title bar height in logical pixels
+            let title_height = 36.0;
             let content_height = (height - title_height).max(0.0);
             
             println!("scale_factor: {}, width: {}, height: {}", scale_factor, width, height);
@@ -66,13 +66,28 @@ fn main() {
                 "ui",
                 tauri::WebviewUrl::External(ui_url.parse().expect("invalid UI url")),
             )
-            .auto_resize();
+            .transparent(true);
 
             main.add_child(
                 ui_builder,
                 tauri::LogicalPosition::new(0.0, 0.0),
                 tauri::LogicalSize::new(width, title_height),
             )?;
+
+            // Listen for window resize to manually adjust the UI webview width
+            let title_bar_height = title_height;
+            let main_clone = main.clone();
+            main.on_window_event(move |event| {
+                if let tauri::WindowEvent::Resized(_) = event {
+                    if let Some(ui_webview) = main_clone.get_webview("ui") {
+                        let scale = main_clone.scale_factor().unwrap_or(1.0);
+                        if let Ok(size) = main_clone.inner_size() {
+                            let new_width = size.width as f64 / scale;
+                            let _ = ui_webview.set_size(tauri::LogicalSize::new(new_width, title_bar_height));
+                        }
+                    }
+                }
+            });
 
             Ok(())
         })

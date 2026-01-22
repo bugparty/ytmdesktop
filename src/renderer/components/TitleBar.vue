@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from "vue";
+import { onBeforeMount, onMounted, ref } from "vue";
 
 const props = defineProps({
   title: {
@@ -23,6 +23,11 @@ const props = defineProps({
     type: Boolean,
     default: false
   }
+});
+
+// Set CSS variable for device pixel ratio
+onMounted(() => {
+  // Nothing needed here for now
 });
 
 const minimizeWindow = window.ytmd.minimizeWindow;
@@ -122,6 +127,7 @@ if (props.isMainWindow) {
 <style scoped>
 .titlebar {
   left: 0;
+  right: 0;
   width: 100%;
   height: 36px;
   user-select: none;
@@ -130,7 +136,9 @@ if (props.isMainWindow) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: relative;
+  position: fixed;
+  top: 0;
+  box-sizing: border-box;
 }
 
 .titlebar .left,
