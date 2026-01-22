@@ -132,6 +132,7 @@ if (!window.ytmd) {
           for (const k of keys) {
             result = result?.[k];
           }
+          console.log("[store:get][mock]", key, result);
           return result;
         }
         try {
@@ -148,7 +149,10 @@ if (!window.ytmd) {
           if (keys.length === 1) {
             // Top-level key
             const value = await store.get(key);
-            if (value !== null && value !== undefined) return value;
+            if (value !== null && value !== undefined) {
+              console.log("[store:get]", key, value);
+              return value;
+            }
             // Fallback to default
             return (defaultStoreState as Record<string, unknown>)[key];
           } else {
@@ -160,13 +164,17 @@ if (!window.ytmd) {
               for (let i = 1; i < keys.length; i++) {
                 result = result?.[keys[i]];
               }
-              if (result !== undefined) return result;
+              if (result !== undefined) {
+                console.log("[store:get]", key, result);
+                return result;
+              }
             }
             // Fallback to default
             let result: any = defaultStoreState;
             for (const k of keys) {
               result = result?.[k];
             }
+            console.log("[store:get][default]", key, result);
             return result;
           }
         } catch (error) {
@@ -176,6 +184,7 @@ if (!window.ytmd) {
           for (const k of keys) {
             result = result?.[k];
           }
+          console.log("[store:get][error-fallback]", key, result);
           return result;
         }
       },
@@ -215,6 +224,7 @@ if (!window.ytmd) {
           }
           
           await store.save();
+          console.log("[store:set]", key, value);
         } catch (error) {
           console.error("Store set error:", error);
         }

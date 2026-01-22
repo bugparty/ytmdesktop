@@ -148,41 +148,41 @@ async function memorySettingsChanged() {
 }
 
 async function settingsChanged() {
-  store.set("general.hideToTrayOnClose", hideToTrayOnClose.value);
-  store.set("general.showNotificationOnSongChange", showNotificationOnSongChange.value);
-  store.set("general.startOnBoot", startOnBoot.value);
-  store.set("general.startMinimized", startMinimized.value);
-  store.set("general.disableHardwareAcceleration", disableHardwareAcceleration.value);
+  await store.set("general.hideToTrayOnClose", hideToTrayOnClose.value);
+  await store.set("general.showNotificationOnSongChange", showNotificationOnSongChange.value);
+  await store.set("general.startOnBoot", startOnBoot.value);
+  await store.set("general.startMinimized", startMinimized.value);
+  await store.set("general.disableHardwareAcceleration", disableHardwareAcceleration.value);
 
-  store.set("appearance.alwaysShowVolumeSlider", alwaysShowVolumeSlider.value);
-  store.set("appearance.customCSSEnabled", customCSSEnabled.value);
-  store.set("appearance.zoom", zoom.value);
-  store.set("appearance.trayIconStyle", trayIconStyle.value);
+  await store.set("appearance.alwaysShowVolumeSlider", alwaysShowVolumeSlider.value);
+  await store.set("appearance.customCSSEnabled", customCSSEnabled.value);
+  await store.set("appearance.zoom", zoom.value);
+  await store.set("appearance.trayIconStyle", trayIconStyle.value);
 
-  store.set("playback.continueWhereYouLeftOff", continueWhereYouLeftOff.value);
-  store.set("playback.continueWhereYouLeftOffPaused", continueWhereYouLeftOffPaused.value);
-  store.set("playback.progressInTaskbar", progressInTaskbar.value);
-  store.set("playback.enableSpeakerFill", enableSpeakerFill.value);
-  store.set("playback.ratioVolume", ratioVolume.value);
+  await store.set("playback.continueWhereYouLeftOff", continueWhereYouLeftOff.value);
+  await store.set("playback.continueWhereYouLeftOffPaused", continueWhereYouLeftOffPaused.value);
+  await store.set("playback.progressInTaskbar", progressInTaskbar.value);
+  await store.set("playback.enableSpeakerFill", enableSpeakerFill.value);
+  await store.set("playback.ratioVolume", ratioVolume.value);
 
-  store.set("integrations.companionServerEnabled", companionServerEnabled.value);
-  store.set("integrations.companionServerCORSWildcardEnabled", companionServerCORSWildcardEnabled.value);
-  store.set("integrations.discordPresenceEnabled", discordPresenceEnabled.value);
-  store.set("integrations.lastFMEnabled", lastFMEnabled.value);
-  store.set("lastfm.scrobblePercent", scrobblePercent.value);
+  await store.set("integrations.companionServerEnabled", companionServerEnabled.value);
+  await store.set("integrations.companionServerCORSWildcardEnabled", companionServerCORSWildcardEnabled.value);
+  await store.set("integrations.discordPresenceEnabled", discordPresenceEnabled.value);
+  await store.set("integrations.lastFMEnabled", lastFMEnabled.value);
+  await store.set("lastfm.scrobblePercent", scrobblePercent.value);
 
-  store.set("shortcuts.playPause", shortcutPlayPause.value);
-  store.set("shortcuts.next", shortcutNext.value);
-  store.set("shortcuts.previous", shortcutPrevious.value);
-  store.set("shortcuts.thumbsUp", shortcutThumbsUp.value);
-  store.set("shortcuts.thumbsDown", shortcutThumbsDown.value);
-  store.set("shortcuts.volumeUp", shortcutVolumeUp.value);
-  store.set("shortcuts.volumeDown", shortcutVolumeDown.value);
+  await store.set("shortcuts.playPause", shortcutPlayPause.value);
+  await store.set("shortcuts.next", shortcutNext.value);
+  await store.set("shortcuts.previous", shortcutPrevious.value);
+  await store.set("shortcuts.thumbsUp", shortcutThumbsUp.value);
+  await store.set("shortcuts.thumbsDown", shortcutThumbsDown.value);
+  await store.set("shortcuts.volumeUp", shortcutVolumeUp.value);
+  await store.set("shortcuts.volumeDown", shortcutVolumeDown.value);
 }
 
 async function settingChangedRequiresRestart() {
   requiresRestart.value = true;
-  settingsChanged();
+  await settingsChanged();
 }
 
 async function settingChangedFile(event: Event) {

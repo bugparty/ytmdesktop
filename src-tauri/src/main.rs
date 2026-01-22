@@ -215,9 +215,23 @@ fn main() {
                     }
                     tauri::WindowEvent::CloseRequested { api, .. } => {
                         // Check if we should hide to tray instead of closing
-                        let hide_to_tray = store_clone.get("general.hideToTrayOnClose")
+                        let _ = store_clone.reload(); // refresh from disk in case renderer updated settings
+                        // Prefer dotted key; fall back to `general` object for older saves
+                        let hide_to_tray = store_clone
+                            .get("general.hideToTrayOnClose")
                             .and_then(|v| v.as_bool())
+                            .or_else(|| {
+                                store_clone
+                                    .get("general")
+                                    .and_then(|v| v.get("hideToTrayOnClose").cloned())
+                                    .and_then(|v| v.as_bool())
+                            })
                             .unwrap_or(false);
+
+                        println!(
+                            "[store:get backend] general.hideToTrayOnClose => {}",
+                            hide_to_tray
+                        );
                         
                         if hide_to_tray {
                             api.prevent_close();
