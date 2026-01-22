@@ -124,9 +124,112 @@ if (!window.ytmd) {
     isLinux: true,
     isWindows: false,
     store: {
-      get: async (key: string): Promise<unknown> => (defaultStoreState as Record<string, unknown>)[key],
-      set: (): void => {},
-      reset: (): void => {},
+      get: async (key: string): Promise<unknown> => {
+        if (!isTauri) {
+          // Handle nested keys like "general.hideToTrayOnClose"
+          const keys = key.split(".");
+          let result: any = defaultStoreState;
+          for (const k of keys) {
+            result = result?.[k];
+          }
+          return result;
+        }
+        try {
+          const Store = (await import("@tauri-apps/plugin-store")).Store;
+          const store = await Store.load("config.json");
+          
+          // Handle nested keys
+          const keys = key.split(".");
+          if (keys.length > 1) {
+            // Prefer the dotted key (used by Rust backend)
+            const dotted = await store.get(key);
+            if (dotted !== null && dotted !== undefined) return dotted;
+          }
+          if (keys.length === 1) {
+            // Top-level key
+            const value = await store.get(key);
+            if (value !== null && value !== undefined) return value;
+            // Fallback to default
+            return (defaultStoreState as Record<string, unknown>)[key];
+          } else {
+            // Nested key like "general.hideToTrayOnClose"
+            const topKey = keys[0];
+            const topValue: any = await store.get(topKey);
+            if (topValue !== null && topValue !== undefined) {
+              let result = topValue;
+              for (let i = 1; i < keys.length; i++) {
+                result = result?.[keys[i]];
+              }
+              if (result !== undefined) return result;
+            }
+            // Fallback to default
+            let result: any = defaultStoreState;
+            for (const k of keys) {
+              result = result?.[k];
+            }
+            return result;
+          }
+        } catch (error) {
+          console.error("Store get error:", error);
+          const keys = key.split(".");
+          let result: any = defaultStoreState;
+          for (const k of keys) {
+            result = result?.[k];
+          }
+          return result;
+        }
+      },
+      set: async (key: string, value: unknown): Promise<void> => {
+        if (!isTauri) return;
+        try {
+          const Store = (await import("@tauri-apps/plugin-store")).Store;
+          const store = await Store.load("config.json");
+          
+          const keys = key.split(".");
+          if (keys.length === 1) {
+            // Top-level key
+            await store.set(key, value);
+          } else {
+            // Nested key like "general.hideToTrayOnClose"
+            const topKey = keys[0];
+            let topValue: any = await store.get(topKey);
+            
+            // If top-level doesn't exist, initialize from defaults
+            if (topValue === null || topValue === undefined) {
+              topValue = JSON.parse(JSON.stringify((defaultStoreState as any)[topKey] || {}));
+            }
+            
+            // Navigate to the nested property and set it
+            let current = topValue;
+            for (let i = 1; i < keys.length - 1; i++) {
+              if (current[keys[i]] === undefined) {
+                current[keys[i]] = {};
+              }
+              current = current[keys[i]];
+            }
+            current[keys[keys.length - 1]] = value;
+            
+            // Save both dotted key (for Rust) and entire top-level object (for JS)
+            await store.set(key, value);
+            await store.set(topKey, topValue);
+          }
+          
+          await store.save();
+        } catch (error) {
+          console.error("Store set error:", error);
+        }
+      },
+      reset: async (): Promise<void> => {
+        if (!isTauri) return;
+        try {
+          const Store = (await import("@tauri-apps/plugin-store")).Store;
+          const store = await Store.load("config.json");
+          await store.clear();
+          await store.save();
+        } catch (error) {
+          console.error("Store reset error:", error);
+        }
+      },
       onStateChanged: (): void => {},
       onDidAnyChange: (): void => {}
     },

@@ -16,12 +16,14 @@ import Settings from "./Settings.vue";
 .settings {
   border-top: 1px solid #212121;
   background-color: #000000;
-  height: calc(100% - 36px);
+  height: calc(100% - 36px - 28px);
 }
 
 .container {
   width: 100%;
   height: 100%;
   background-color: #000000;
+  padding-top: 28px;
+  box-sizing: border-box;
 }
 </style>

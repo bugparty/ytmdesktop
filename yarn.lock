@@ -1379,7 +1379,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tauri-apps/api@npm:^2.0.0":
+"@tauri-apps/api@npm:^2.0.0, @tauri-apps/api@npm:^2.8.0":
   version: 2.9.1
   resolution: "@tauri-apps/api@npm:2.9.1"
   checksum: 10c0/18c76ec58b579860bfde5cd5b5ea6c3b13019d356c17d436bf395cafdf15dd1f277364cacd24cc94e5d4aa3816f39698f231773d2a18625e98702295ab0c2c8f
@@ -1504,6 +1504,15 @@ __metadata:
   bin:
     tauri: tauri.js
   checksum: 10c0/f8aed97b4dec2ad99720315d8bf392624e5db13eff30e89340849d14b17020a3f65af847f1ebdad88f187ccb0f00512e77a17af8c607350fc9a7c68c05414b8b
+  languageName: node
+  linkType: hard
+
+"@tauri-apps/plugin-store@npm:^2.4.2":
+  version: 2.4.2
+  resolution: "@tauri-apps/plugin-store@npm:2.4.2"
+  dependencies:
+    "@tauri-apps/api": "npm:^2.8.0"
+  checksum: 10c0/6892417dbd3e97c4a70e00ca437a196a65499831e7b3a5dc5b71646596a16c4030f23dedfa124ed853c73999a5b8e48de129fb0369e7af7c987142e060b58127
   languageName: node
   linkType: hard
 
@@ -8270,6 +8279,7 @@ __metadata:
     "@sinclair/typebox": "npm:^0.34.33"
     "@tauri-apps/api": "npm:^2.0.0"
     "@tauri-apps/cli": "npm:^2.0.0"
+    "@tauri-apps/plugin-store": "npm:^2.4.2"
     "@types/electron-squirrel-startup": "npm:^1.0.2"
     "@types/node": "npm:^22.15.30"
     "@typescript-eslint/eslint-plugin": "npm:^8.33.1"

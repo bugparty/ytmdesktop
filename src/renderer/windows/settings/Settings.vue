@@ -399,7 +399,7 @@ window.ytmd.handleUpdateDownloaded(() => {
               </tbody>
             </table>
             <div v-if="companionServerAuthTokens.length === 0" class="no-authorized-companions">
-              <td>No authorized companions</td>
+              <p>No authorized companions</p>
             </div>
           </YTMDSetting>
           <YTMDSetting v-model="discordPresenceEnabled" type="checkbox" name="Discord rich presence" @change="settingsChanged" />

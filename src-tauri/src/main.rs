@@ -5,6 +5,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager,
 };
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 #[tauri::command]
 fn ytmview_navigate_default(app: tauri::AppHandle) {
@@ -13,9 +14,34 @@ fn ytmview_navigate_default(app: tauri::AppHandle) {
     }
 }
 
+#[tauri::command]
+fn set_progress_bar(window: tauri::Window, progress: f64) {
+    let progress_value = (progress.max(0.0).min(100.0) / 100.0) as u64;
+    let _ = window.set_progress_bar(tauri::window::ProgressBarState {
+        progress: Some(progress_value),
+        status: None,
+    });
+}
+
+#[tauri::command]
+fn clear_progress_bar(window: tauri::Window) {
+    let _ = window.set_progress_bar(tauri::window::ProgressBarState {
+        progress: None,
+        status: None,
+    });
+}
+
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![ytmview_navigate_default])
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--start-minimized"])))
+        .plugin(tauri_plugin_notification::init())
+        .invoke_handler(tauri::generate_handler![
+            ytmview_navigate_default,
+            set_progress_bar,
+            clear_progress_bar
+        ])
         .setup(|app| {
             // Create tray menu
             let show_hide = MenuItem::with_id(app, "show_hide", "Show/Hide Window", true, None::<&str>)?;
@@ -100,6 +126,17 @@ fn main() {
                 })
                 .build(app)?;
 
+            // Load settings from store
+            use tauri_plugin_store::StoreExt;
+            let store = app.store("config.json").expect("failed to load store");
+            
+            // Check if we should start minimized
+            let start_minimized = if std::env::args().any(|arg| arg == "--start-minimized") {
+                true
+            } else {
+                store.get("general.startMinimized").and_then(|v| v.as_bool()).unwrap_or(false)
+            };
+
             let ui_url = if cfg!(debug_assertions) {
                 let dev_url = app
                     .config()
@@ -116,7 +153,7 @@ fn main() {
             let main = tauri::window::WindowBuilder::new(app, "main")
                 .title("YouTube Music Desktop App")
                 .inner_size(1280.0, 800.0)
-                .visible(true)
+                .visible(!start_minimized)
                 .build()?;
 
             // Use the logical size (DPI-independent) for webview layout.
@@ -164,17 +201,72 @@ fn main() {
             // Listen for window resize to manually adjust the UI webview width
             let title_bar_height = title_height;
             let main_clone = main.clone();
+            let store_clone = store.clone();
             main.on_window_event(move |event| {
-                if let tauri::WindowEvent::Resized(_) = event {
-                    if let Some(ui_webview) = main_clone.get_webview("ui") {
-                        let scale = main_clone.scale_factor().unwrap_or(1.0);
-                        if let Ok(size) = main_clone.inner_size() {
-                            let new_width = size.width as f64 / scale;
-                            let _ = ui_webview.set_size(tauri::LogicalSize::new(new_width, title_bar_height));
+                match event {
+                    tauri::WindowEvent::Resized(_) => {
+                        if let Some(ui_webview) = main_clone.get_webview("ui") {
+                            let scale = main_clone.scale_factor().unwrap_or(1.0);
+                            if let Ok(size) = main_clone.inner_size() {
+                                let new_width = size.width as f64 / scale;
+                                let _ = ui_webview.set_size(tauri::LogicalSize::new(new_width, title_bar_height));
+                            }
                         }
                     }
+                    tauri::WindowEvent::CloseRequested { api, .. } => {
+                        // Check if we should hide to tray instead of closing
+                        let hide_to_tray = store_clone.get("general.hideToTrayOnClose")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(false);
+                        
+                        if hide_to_tray {
+                            api.prevent_close();
+                            let _ = main_clone.hide();
+                        }
+                    }
+                    _ => {}
                 }
             });
+
+            // Register global shortcuts for media control
+            // Using Media keys as default (can be configured later via store)
+            let app_handle = app.handle().clone();
+            
+            // Play/Pause - MediaPlayPause
+            if let Ok(shortcut) = "MediaPlayPause".parse::<Shortcut>() {
+                let ytmview_handle = app_handle.clone();
+                let _ = app.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, event| {
+                    if event.state == ShortcutState::Pressed {
+                        if let Some(webview) = ytmview_handle.get_webview("ytmview") {
+                            let _ = webview.eval("document.querySelector('#play-pause-button')?.click();");
+                        }
+                    }
+                });
+            }
+
+            // Next - MediaTrackNext  
+            if let Ok(shortcut) = "MediaTrackNext".parse::<Shortcut>() {
+                let ytmview_handle = app_handle.clone();
+                let _ = app.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, event| {
+                    if event.state == ShortcutState::Pressed {
+                        if let Some(webview) = ytmview_handle.get_webview("ytmview") {
+                            let _ = webview.eval("document.querySelector('.next-button')?.click();");
+                        }
+                    }
+                });
+            }
+
+            // Previous - MediaTrackPrevious
+            if let Ok(shortcut) = "MediaTrackPrevious".parse::<Shortcut>() {
+                let ytmview_handle = app_handle.clone();
+                let _ = app.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, event| {
+                    if event.state == ShortcutState::Pressed {
+                        if let Some(webview) = ytmview_handle.get_webview("ytmview") {
+                            let _ = webview.eval("document.querySelector('.previous-button')?.click();");
+                        }
+                    }
+                });
+            }
 
             Ok(())
         })
