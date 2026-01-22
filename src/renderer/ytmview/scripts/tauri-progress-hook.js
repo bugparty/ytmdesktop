@@ -1,0 +1,45 @@
+(function () {
+  const invoke = window.__TAURI__?.core?.invoke;
+  if (!invoke) {
+    console.warn("[ytm-progress-hook] tauri invoke not available");
+    return;
+  }
+
+  const safeInvoke = (cmd, args) => invoke(cmd, args).catch(err => console.warn("[ytm-progress-hook] invoke failed", err));
+
+  function setup() {
+    const playerBar = document.querySelector("ytmusic-app-layout>ytmusic-player-bar");
+    const api = playerBar?.playerApi;
+    if (!api) return false;
+
+    const sendProgress = seconds => {
+      const duration = typeof api.getDuration === "function" ? api.getDuration() : 0;
+      if (!duration || Number.isNaN(duration)) return;
+      const percent = Math.max(0, Math.min(100, (seconds / duration) * 100));
+      safeInvoke("set_progress_bar", { progress: percent });
+    };
+
+    api.addEventListener("onVideoProgress", seconds => {
+      sendProgress(seconds);
+    });
+
+    api.addEventListener("onStateChange", state => {
+      // 0 = ended, 2 = paused
+      if (state === 0) {
+        safeInvoke("clear_progress_bar");
+      } else if (state === 2) {
+        sendProgress(api.getCurrentTime ? api.getCurrentTime() : 0);
+      }
+    });
+
+    return true;
+  }
+
+  let tries = 0;
+  const timer = setInterval(() => {
+    tries += 1;
+    if (setup() || tries > 40) {
+      clearInterval(timer);
+    }
+  }, 500);
+})();
