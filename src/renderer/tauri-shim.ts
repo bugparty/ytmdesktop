@@ -287,10 +287,13 @@ if (!window.ytmd) {
     requestWindowState: noop as () => Promise<void>,
     handleWindowEvents: (callback: (event: unknown, args: WindowState) => void): void => {
       callback(null, windowState);
+      pendingWindowEventHandlers.push(callback);
     }
   };
 
   // Proxy functions that always call the current implementation
+  const pendingWindowEventHandlers: Array<(event: unknown, args: WindowState) => void> = [];
+
   ytmd.minimizeWindow = () => impl.minimizeWindow();
   ytmd.maximizeWindow = () => impl.maximizeWindow();
   ytmd.restoreWindow = () => impl.restoreWindow();
@@ -316,6 +319,7 @@ if (!window.ytmd) {
         const mainWindow = new Window("main");
         // Get the current window/webview for close operation (so settings can close itself)
         const currentWindow = getCurrentWebviewWindow();
+        const currentLabel = currentWindow.label;
 
         impl.minimizeWindow = () => {
           void mainWindow.minimize();
@@ -327,8 +331,12 @@ if (!window.ytmd) {
           void mainWindow.unmaximize();
         };
         impl.closeWindow = () => {
-          // Close the current window (main or settings)
-          void currentWindow.close();
+          // Close settings window if that's where we are; otherwise close main window
+          if (currentLabel === "settings") {
+            void currentWindow.close();
+          } else {
+            void mainWindow.close();
+          }
         };
 
       // Open settings window
@@ -369,32 +377,35 @@ if (!window.ytmd) {
         windowState.fullscreen = await mainWindow.isFullscreen();
       };
 
-      impl.handleWindowEvents = (callback: (event: unknown, args: WindowState) => void): void => {
-        void (async () => {
-          windowState.maximized = await mainWindow.isMaximized();
-          windowState.fullscreen = await mainWindow.isFullscreen();
-          callback(null, { ...windowState });
-
-          await mainWindow.listen("tauri://resize", async () => {
+        impl.handleWindowEvents = (callback: (event: unknown, args: WindowState) => void): void => {
+          void (async () => {
             windowState.maximized = await mainWindow.isMaximized();
             windowState.fullscreen = await mainWindow.isFullscreen();
             callback(null, { ...windowState });
-          });
 
-          await mainWindow.listen("tauri://unmaximize", () => {
-            windowState.maximized = false;
-            callback(null, { ...windowState });
-          });
+            await mainWindow.listen("tauri://resize", async () => {
+              windowState.maximized = await mainWindow.isMaximized();
+              windowState.fullscreen = await mainWindow.isFullscreen();
+              callback(null, { ...windowState });
+            });
 
-          await mainWindow.listen("tauri://maximize", () => {
-            windowState.maximized = true;
-            callback(null, { ...windowState });
-          });
-        })();
-      };
+            await mainWindow.listen("tauri://unmaximize", () => {
+              windowState.maximized = false;
+              callback(null, { ...windowState });
+            });
 
-      // Re-request window state now that handlers are ready
-      ytmd.requestWindowState();
+            await mainWindow.listen("tauri://maximize", () => {
+              windowState.maximized = true;
+              callback(null, { ...windowState });
+            });
+          })();
+        };
+
+        // Reattach any pending handlers that subscribed before Tauri APIs were ready
+        pendingWindowEventHandlers.forEach(cb => impl.handleWindowEvents(cb));
+
+        // Re-request window state now that handlers are ready
+        void impl.requestWindowState();
       } catch (e) {
         console.error("Failed to initialize Tauri APIs:", e);
       }
