@@ -200,6 +200,13 @@ fn main() {
                 tauri::LogicalSize::new(width, title_height),
             )?;
 
+            // In dev builds, open the YTM webview devtools so console logs from injected scripts are visible
+            if cfg!(debug_assertions) {
+                if let Some(wv) = main.get_webview("ytmview") {
+                    let _ = wv.open_devtools();
+                }
+            }
+
             // Listen for window resize to manually adjust the UI webview width
             let title_bar_height = title_height;
             let main_clone = main.clone();

@@ -1,7 +1,7 @@
 {
   "identifier": "default",
   "description": "Default application capabilities",
-  "windows": ["main", "ui", "settings"],
+  "windows": ["main", "ui", "settings", "ytmview"],
   "permissions": [
     "core:default",
     "core:window:allow-close",

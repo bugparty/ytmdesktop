@@ -1,5 +1,5 @@
 (function () {
-  const invoke = window.__TAURI__?.core?.invoke;
+  const invoke = window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke;
   if (!invoke) {
     console.warn("[ytm-progress-hook] tauri invoke not available");
     return;
@@ -10,7 +10,12 @@
   function setup() {
     const playerBar = document.querySelector("ytmusic-app-layout>ytmusic-player-bar");
     const api = playerBar?.playerApi;
-    if (!api) return false;
+    if (!api) {
+      console.debug("[ytm-progress-hook] playerApi not ready");
+      return false;
+    }
+
+    console.debug("[ytm-progress-hook] hooked playerApi events");
 
     const sendProgress = seconds => {
       const duration = typeof api.getDuration === "function" ? api.getDuration() : 0;
@@ -38,7 +43,12 @@
   let tries = 0;
   const timer = setInterval(() => {
     tries += 1;
-    if (setup() || tries > 40) {
+    const ok = setup();
+    if (ok) {
+      console.debug("[ytm-progress-hook] setup success at attempt", tries);
+      clearInterval(timer);
+    } else if (tries > 40) {
+      console.warn("[ytm-progress-hook] setup timed out after", tries, "tries");
       clearInterval(timer);
     }
   }, 500);
