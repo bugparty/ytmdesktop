@@ -1,6 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::Manager;
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    Manager,
+};
 
 #[tauri::command]
 fn ytmview_navigate_default(app: tauri::AppHandle) {
@@ -13,6 +17,89 @@ fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![ytmview_navigate_default])
         .setup(|app| {
+            // Create tray menu
+            let show_hide = MenuItem::with_id(app, "show_hide", "Show/Hide Window", true, None::<&str>)?;
+            let play_pause = MenuItem::with_id(app, "play_pause", "Play/Pause", true, None::<&str>)?;
+            let previous = MenuItem::with_id(app, "previous", "Previous", true, None::<&str>)?;
+            let next = MenuItem::with_id(app, "next", "Next", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+
+            let menu = Menu::with_items(
+                app,
+                &[&show_hide, &play_pause, &previous, &next, &quit],
+            )?;
+
+            // Get the icon path
+            let icon_path = if cfg!(debug_assertions) {
+                // In dev mode, use absolute path from project root
+                std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .parent()
+                    .expect("failed to get parent dir")
+                    .join("src/assets/icons/tray.ico")
+            } else {
+                app.path()
+                    .resource_dir()
+                    .expect("failed to get resource dir")
+                    .join("icons/tray.ico")
+            };
+
+            // Create tray icon
+            let _tray = TrayIconBuilder::new()
+                .icon(tauri::image::Image::from_path(&icon_path).expect("failed to load tray icon"))
+                .menu(&menu)
+                .tooltip("YouTube Music Desktop App")
+                .on_menu_event(|app, event| match event.id().as_ref() {
+                    "show_hide" => {
+                        if let Some(window) = app.get_window("main") {
+                            if window.is_visible().unwrap_or(false) {
+                                let _ = window.hide();
+                            } else {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                    }
+                    "play_pause" => {
+                        if let Some(webview) = app.get_webview("ytmview") {
+                            let _ = webview.eval("document.querySelector('#play-pause-button')?.click();");
+                        }
+                    }
+                    "previous" => {
+                        if let Some(webview) = app.get_webview("ytmview") {
+                            let _ = webview.eval("document.querySelector('.previous-button')?.click();");
+                        }
+                    }
+                    "next" => {
+                        if let Some(webview) = app.get_webview("ytmview") {
+                            let _ = webview.eval("document.querySelector('.next-button')?.click();");
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_window("main") {
+                            if window.is_minimized().unwrap_or(false) {
+                                let _ = window.unminimize();
+                                let _ = window.set_focus();
+                            } else {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                    }
+                })
+                .build(app)?;
+
             let ui_url = if cfg!(debug_assertions) {
                 let dev_url = app
                     .config()
