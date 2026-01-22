@@ -7,15 +7,33 @@
 
   const safeInvoke = (cmd, args) => invoke(cmd, args).catch(err => console.warn("[ytm-progress-hook] invoke failed", err));
 
-  function setup() {
-    const playerBar = document.querySelector("ytmusic-app-layout>ytmusic-player-bar");
-    const api = playerBar?.playerApi;
+  const selectors = [
+    "ytmusic-player-bar",
+    "ytmusic-app-layout ytmusic-player-bar",
+    "ytmusic-app ytmusic-player-bar",
+    "ytmusic-app-layout>ytmusic-player-bar"
+  ];
+
+  let hooked = false;
+
+  function findPlayerApi() {
+    for (const sel of selectors) {
+      const el = document.querySelector(sel);
+      if (el?.playerApi) return el.playerApi;
+    }
+    return null;
+  }
+
+  function trySetup() {
+    if (hooked) return true;
+    const api = findPlayerApi();
     if (!api) {
       console.debug("[ytm-progress-hook] playerApi not ready");
       return false;
     }
 
     console.debug("[ytm-progress-hook] hooked playerApi events");
+    hooked = true;
 
     const sendProgress = seconds => {
       const duration = typeof api.getDuration === "function" ? api.getDuration() : 0;
@@ -40,16 +58,25 @@
     return true;
   }
 
+  // Interval retry as before
   let tries = 0;
   const timer = setInterval(() => {
     tries += 1;
-    const ok = setup();
+    const ok = trySetup();
     if (ok) {
       console.debug("[ytm-progress-hook] setup success at attempt", tries);
       clearInterval(timer);
-    } else if (tries > 40) {
+    } else if (tries > 200) {
       console.warn("[ytm-progress-hook] setup timed out after", tries, "tries");
       clearInterval(timer);
     }
   }, 500);
+
+  // Mutation observer to catch late-loaded player bar
+  const observer = new MutationObserver(() => {
+    if (trySetup()) {
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
 })();

@@ -8,6 +8,9 @@ use tauri::{
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
+// Injected into the YTM webview to forward player progress/state to the backend
+const YTM_PROGRESS_HOOK: &str = include_str!("../../src/renderer/ytmview/scripts/tauri-progress-hook.js");
+
 #[tauri::command]
 fn ytmview_navigate_default(app: tauri::AppHandle) {
     if let Some(webview) = app.get_webview("ytmview") {
@@ -179,6 +182,7 @@ fn main() {
                         .expect("invalid YTM url"),
                 ),
             )
+            .initialization_script(YTM_PROGRESS_HOOK)
             .auto_resize();
 
             main.add_child(
@@ -186,6 +190,11 @@ fn main() {
                 tauri::LogicalPosition::new(0.0, title_height),
                 tauri::LogicalSize::new(width, content_height),
             )?;
+
+            // Ensure progress hook is injected even if initialization_script is skipped
+            if let Some(wv) = main.get_webview("ytmview") {
+                let _ = wv.eval(YTM_PROGRESS_HOOK);
+            }
 
             // UI webview on top bar area (added after YTM to ensure it is above).
             let ui_builder = tauri::webview::WebviewBuilder::new(

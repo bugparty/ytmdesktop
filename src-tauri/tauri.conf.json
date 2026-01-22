@@ -10,7 +10,7 @@
   },
   "app": {
     "security": {
-      "capabilities": ["default"]
+      "capabilities": ["default", "ytmview-remote"]
     },
     "withGlobalTauri": true
   },
