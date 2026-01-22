@@ -28,6 +28,7 @@
 
 import "material-symbols/outlined.css";
 import "~assets/app.css";
+import "../../tauri-shim";
 
 import { createApp } from "vue";
 import App from "./Index.vue";
