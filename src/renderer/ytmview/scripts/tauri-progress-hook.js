@@ -4,24 +4,18 @@
     return;
   }
 
-  console.log("[ytm-progress-hook] script started");
-
   const invoke = window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke;
   if (!invoke) {
-    console.warn("[ytm-progress-hook] tauri invoke not available, window.__TAURI__ =", window.__TAURI__);
     return;
   }
 
-  console.log("[ytm-progress-hook] tauri invoke available");
-
   const safeInvoke = (cmd, args) => {
-    return invoke(cmd, args).catch(err => console.warn("[ytm-progress-hook] invoke failed", err));
+    return invoke(cmd, args).catch(() => {});
   };
 
   let hooked = false;
 
   function findPlayerBar() {
-    // YTM uses standard DOM, not shadow DOM for player bar
     return document.querySelector("ytmusic-app-layout > ytmusic-player-bar") ||
            document.querySelector("ytmusic-player-bar");
   }
@@ -30,21 +24,13 @@
     if (hooked) return true;
 
     const playerBar = findPlayerBar();
-    if (!playerBar) {
-      return false;
-    }
+    if (!playerBar) return false;
 
     const api = playerBar.playerApi;
-    if (!api) {
-      return false;
-    }
+    if (!api) return false;
 
-    // Check if playerApi is ready (has isReady method and returns true)
-    if (typeof api.isReady === "function" && !api.isReady()) {
-      return false;
-    }
+    if (typeof api.isReady === "function" && !api.isReady()) return false;
 
-    console.log("[ytm-progress-hook] hooked playerApi events successfully!");
     hooked = true;
 
     const sendProgress = seconds => {
@@ -54,12 +40,9 @@
       safeInvoke("set_progress_bar", { progress: percent });
     };
 
-    api.addEventListener("onVideoProgress", seconds => {
-      sendProgress(seconds);
-    });
+    api.addEventListener("onVideoProgress", sendProgress);
 
     api.addEventListener("onStateChange", state => {
-      // 0 = ended, 2 = paused
       if (state === 0) {
         safeInvoke("clear_progress_bar");
       } else if (state === 2) {
@@ -70,17 +53,11 @@
     return true;
   }
 
-  // Wait for window load first, then start polling
   function startPolling() {
-    console.log("[ytm-progress-hook] starting polling for playerApi");
     let tries = 0;
     const timer = setInterval(() => {
       tries += 1;
-      if (trySetup()) {
-        console.log("[ytm-progress-hook] setup success at attempt", tries);
-        clearInterval(timer);
-      } else if (tries > 300) {
-        console.warn("[ytm-progress-hook] setup timed out after", tries, "tries (150 seconds)");
+      if (trySetup() || tries > 300) {
         clearInterval(timer);
       }
     }, 500);
