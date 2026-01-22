@@ -210,13 +210,13 @@ if (!window.ytmd) {
         impl.maximizeWindow = () => {
           void mainWindow.maximize();
         };
-      impl.restoreWindow = () => {
-        void mainWindow.unmaximize();
-      };
-      impl.closeWindow = () => {
-        // Close the current window (main or settings)
-        void currentWindow.close();
-      };
+        impl.restoreWindow = () => {
+          void mainWindow.unmaximize();
+        };
+        impl.closeWindow = () => {
+          // Close the current window (main or settings)
+          void currentWindow.close();
+        };
 
       // Open settings window
       impl.openSettingsWindow = async () => {
