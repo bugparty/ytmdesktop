@@ -152,6 +152,7 @@ fn main() {
 
             let main = tauri::window::WindowBuilder::new(app, "main")
                 .title("YouTube Music Desktop App")
+                .decorations(false)
                 .inner_size(1280.0, 800.0)
                 .visible(!start_minimized)
                 .build()?;
