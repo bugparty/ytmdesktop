@@ -1,5 +1,7 @@
 # YouTube Music Desktop App
-### Now with a Fresh new Codebase 😉
+### 🚀 Now Powered by Tauri!
+
+> **⚠️ Migration in Progress**: This app is being migrated from Electron to [Tauri](https://tauri.app/) for better performance and smaller bundle size.
 
 ![YouTube Music Desktop App](.github/images/readme_main_app.png)
 
@@ -8,6 +10,32 @@
 [![GitHub license][license-img]][license-url]
 [![GitHub release][release-img]][release-url]
 [![Download][download-img]][download-url]
+
+## ✅ Implemented Features (Tauri)
+
+- ✅ Basic YouTube Music playback
+- ✅ Custom TitleBar with minimize/maximize/close
+- ✅ System tray with show/hide toggle
+- ✅ Hide to tray on close (configurable)
+- ✅ Global keyboard shortcuts (Play/Pause, Next, Previous)
+- ✅ Taskbar progress bar (shows playback progress)
+- ✅ Settings persistence
+- ✅ Start on login (autostart)
+
+## ❌ Not Yet Implemented
+
+- ❌ Discord Rich Presence integration
+- ❌ Last.fm scrobbling
+- ❌ Companion Server (Remote control API)
+- ❌ Custom CSS injection
+- ❌ Notifications on song change
+- ❌ Continue where you left off (save/restore playback position)
+- ❌ Volume ratio adjustment
+- ❌ Speaker fill / Audio enhancements
+- ❌ In-app quality selection
+- ❌ Lyrics display
+- ❌ Mini player mode
+- ❌ Picture-in-Picture mode
 
 <!--
 TODO: Write guides for v2. While these may still be helpful they are geared towards v1
@@ -43,7 +71,7 @@ TODO: Write guides for v2. While these may still be helpful they are geared towa
 - Binaries: <https://github.com/ytmdesktop/ytmdesktop/releases>
 
 # Developing
-To clone and run this repository you'll need [Git](https://git-scm.com) and [Node.js (v20)](https://nodejs.org/en/download/) (which comes with [npm](http://npmjs.com)) installed on your computer. From your command line:
+To clone and run this repository you'll need [Git](https://git-scm.com), [Node.js (v20)](https://nodejs.org/en/download/) and [Rust](https://www.rust-lang.org/tools/install) installed on your computer.
 
 ```sh
 # Clone this repository
@@ -51,43 +79,67 @@ git clone https://github.com/ytmdesktop/ytmdesktop.git
 # Go into the directory
 cd ytmdesktop
 ```
-##### And:
+
+##### Install Dependencies:
 ```sh
-# If you do not have Yarn Installed / New to Node as a whole you can enable Yarn with:
+# If you do not have Yarn Installed
 corepack enable
 
-# Install dependencies
+# Install Node.js dependencies
 yarn install
-# Run the app
-yarn start
+```
+
+##### Run in Development Mode:
+```sh
+# Run the Tauri app in development mode
+yarn tauri:dev
 ```
 
 # Building the Project
-To build for your platform you need to run `yarn make`, however please see the information below regarding the required additionally Software, Tools and Packages which are needed to successfully package into a nice installer file.
+
+## Prerequisites (All Platforms)
+- [Rust](https://www.rust-lang.org/tools/install) (latest stable)
+- [Node.js v20+](https://nodejs.org/)
+- Yarn (via `corepack enable`)
 
 ## Windows
-To download the full suite of Tools/Software needed to build the app it is recommended to install the suite of build tools that electron provide which includes Visual Studio, Python and other tools.
+Install Visual Studio Build Tools with C++ workload, or run:
+```sh
+npm i -g @electron/build-tools
+```
 
-`npm i -g @electron/build-tools`
-
-This will start downloading and installing, and may require a few prompts here and there to finalise everything.
-
-<!--
-TODO: Fill this information in
-## MacOS
-*to do*
--->
+Then build:
+```sh
+yarn tauri:build
+```
 
 ## Linux
-Building the project on Linux only requires you to install:
-- For building on Debian based Linux Distros like Ubuntu, you will need to install `fakeroot` and `dpkg`
-- For building on RedHat based Linux Distros like Fedora, you will need to install `rpm` or `rpm-build`
+Install the required system dependencies:
+```sh
+# Debian/Ubuntu
+sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
+  libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
 
-*please note that by default both packages are built if you try building this application on a linux distro*
+# Fedora
+sudo dnf install webkit2gtk4.1-devel openssl-devel curl wget file \
+  libxdo-devel libappindicator-gtk3-devel librsvg2-devel
+```
 
-<!--
-### Note to the note, I suspect this has been fixed now, testing myself I was able to run the software without anything extra, although did have to sepecify `--disable-gpu` to run.
-**Note:** If you're using Windows Subsystem for Linux (WSL2), [see this guide][more] or use `node` from the command prompt. -->
+Then build:
+```sh
+yarn tauri:build
+```
+
+## macOS
+Install Xcode Command Line Tools:
+```sh
+xcode-select --install
+```
+
+Then build:
+```sh
+yarn tauri:build
+```
 
 <!--
 Project currently doesn't have Locales, so Ignore this for now.
