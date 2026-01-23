@@ -3,7 +3,6 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    webview::WebviewBuilder,
     Manager,
 };
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
@@ -212,11 +211,11 @@ fn main() {
             )?;
 
             // In dev builds, open the YTM webview devtools so console logs from injected scripts are visible
-            if cfg!(debug_assertions) {
-                if let Some(wv) = main.get_webview("ytmview") {
-                    let _ = wv.open_devtools();
-                }
-            }
+            // if cfg!(debug_assertions) {
+            //     if let Some(wv) = main.get_webview("ytmview") {
+            //         let _ = wv.open_devtools();
+            //     }
+            // }
 
             // Listen for window resize to manually adjust the UI webview width
             let title_bar_height = title_height;
